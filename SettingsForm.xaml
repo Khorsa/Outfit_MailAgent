@@ -1,0 +1,61 @@
+﻿<Window x:Class="MailAgent.SettingsForm"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{DynamicResource Settings}" Height="462" Width="600" 
+        Background="#F5F5F5" ResizeMode="NoResize">
+    
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/MailAgent;component/Languages/lang.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="20">
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <TextBlock Text="{DynamicResource MailCheckIntervalColon}" Margin="0,10,0,0" Grid.Column="0"/>
+                <TextBlock x:Name="MailCheckIntervalValue" Margin="0,10,0,0" Text="{Binding Value, ElementName=MailCheckIntervalSlider}" Width="54" HorizontalAlignment="Right" Grid.Column="1" TextAlignment="Right"/>
+            </Grid>
+            <Slider x:Name="MailCheckIntervalSlider" Minimum="1" Maximum="30" TickFrequency="1" IsSnapToTickEnabled="True"/>
+
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <TextBlock Text="{DynamicResource ServerReconnectIntervalColon}" Margin="0,10,0,0" Grid.Column="0"/>
+                <TextBlock x:Name="ReconnectIntervalValue" Text="{Binding ElementName=ReconnectIntervalSlider, Path=Value}" Margin="0,10,0,0" Grid.Column="1"/>
+            </Grid>
+            <Slider x:Name="ReconnectIntervalSlider" Minimum="30" Maximum="320" TickFrequency="1" IsSnapToTickEnabled="True"/>
+
+            <TextBlock Text="{DynamicResource AccountsColon}" Margin="0,10,0,0"/>
+            <ListView x:Name="AccountsListView" Margin="0,10" Height="150">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="{DynamicResource Server}" Width="130" DisplayMemberBinding="{Binding server}"/>
+                        <GridViewColumn Header="{DynamicResource Port}" Width="40" DisplayMemberBinding="{Binding port}"/>
+                        <GridViewColumn Header="{DynamicResource EMail}" Width="150" DisplayMemberBinding="{Binding email}"/>
+                        <GridViewColumn Header="{DynamicResource LinkToService}" DisplayMemberBinding="{Binding mailServiceRef}"/>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                <Button Content="{DynamicResource Add}" Width="80" Margin="5" Click="AddAccount_Click"/>
+                <Button Content="{DynamicResource Edit}" Width="100" Margin="5" Click="EditAccount_Click"/>
+                <Button Content="{DynamicResource Remove}" Width="80" Margin="5" Click="DeleteAccount_Click"/>
+            </StackPanel>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="2" Margin="20">
+            <Button Content="{DynamicResource Apply}" Width="100" Margin="5" Click="Apply_Click"/>
+            <Button Content="{DynamicResource Cancel}" Width="100" Margin="5" Click="Cancel_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -1,0 +1,28 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:v="clr-namespace:System;assembly=mscorlib">
+    <v:String x:Key="Settings">Settings</v:String>
+    <v:String x:Key="MailCheckIntervalColon">Mail check interval (sec):</v:String>
+    <v:String x:Key="ServerReconnectIntervalColon">Server reconnect interval (min):</v:String>
+    <v:String x:Key="AccountsColon">Accounts:</v:String>
+    <v:String x:Key="Server">Server</v:String>
+    <v:String x:Key="Port">Port</v:String>
+    <v:String x:Key="EMail">EMail</v:String>
+    <v:String x:Key="LinkToService">Link to service</v:String>
+    <v:String x:Key="Add">Add</v:String>
+    <v:String x:Key="Edit">Edit</v:String>
+    <v:String x:Key="Remove">Remove</v:String>
+    <v:String x:Key="Apply">Apply</v:String>
+    <v:String x:Key="Cancel">Cancel</v:String>
+
+    <v:String x:Key="Account">Account</v:String>
+    <v:String x:Key="ServerAndPortColon">Server and port:</v:String>
+    <v:String x:Key="EMailColon">Email:</v:String>
+    <v:String x:Key="PasswordColon">Password:</v:String>
+    <v:String x:Key="LinkToServiceColon">Link to service:</v:String>
+    <v:String x:Key="Save">Save</v:String>
+
+    <v:String x:Key="SelectAccountForEdit">Select account for edit.</v:String>
+    <v:String x:Key="SelectAccountForDelete">Select account for delete.</v:String>
+
+</ResourceDictionary>
