@@ -1,3 +1,4 @@
 obj/
 bin/
-copy.debug.bat
+deploy/
+copy.bat
