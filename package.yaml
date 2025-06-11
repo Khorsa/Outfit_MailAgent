@@ -1,4 +1,11 @@
-name: mail-agent
+name: mail_agent
+display_name: "Mail Agent"
+assembly_name: "MailAgent"
+description: "Mail Agent"
+author: "Stolyarov Roman"
+author_contacts: "rshome@mail.ru"
 version: '0.1'
+version_label: 'pre-alpha'
+require: '3.0'
 changes: >
     0.1 initial version
