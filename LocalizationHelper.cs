@@ -73,11 +73,24 @@ namespace MailAgent
                 return new CultureInfo(CultureName);
             }
         }
+
         public Uri DictionarySource
         {
             get
             {
-                return new Uri(String.Format("pack://application:,,,/MailAgent;component/Languages/lang.{0}.xaml", CultureName), UriKind.Absolute);
+                var uri = new Uri(String.Format("pack://application:,,,/MailAgent;component/Languages/lang.{0}.xaml", CultureName), UriKind.Absolute);
+                // Проверяем, существует ли ресурс
+                try
+                {
+                    ResourceDictionary dict = new ResourceDictionary();
+                    dict.Source = uri;
+                }
+                catch (Exception)
+                {
+                    uri = new Uri(String.Format("pack://application:,,,/MailAgent;component/Languages/lang.xaml", CultureName), UriKind.Absolute);
+                }
+
+                return uri;
             }
         }
     }
