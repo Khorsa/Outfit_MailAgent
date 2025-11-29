@@ -1,173 +1,152 @@
-﻿using OutfitTool.Common;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Globalization;
 using System.Timers;
-using MailKit;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Drawing;
-using System.IO;
-using System.Reflection;
 using MailAgent.Settings;
-using Common.Logger;
-using System.Runtime.CompilerServices;
-using System.Globalization;
+using MailKit;
+using OutfitTool.API1;
+using OutfitTool.API1.Dto;
+using OutfitTool.API1.Logger;
+using Timer = System.Timers.Timer;
 
-namespace MailAgent
+namespace MailAgent;
+
+internal class ModuleController : IModuleController
 {
-    internal class ModuleController : ModuleControllerInterface
+    private static Timer? _timer;
+
+    private Dictionary<UniqueId, MailDto> _unreadMessages = new();
+    private readonly Dictionary<UniqueId, MailDto> _notifiedMessages = new();
+
+    private readonly MailService _mailService = new();
+    private readonly SettingsManager<MailAgentSettings> _settingManager = new();
+    private ILogger? _logger;
+
+    public List<ICommand> GetCommandList()
     {
-        private static System.Timers.Timer _timer;
+        return [];
+    }
 
-        private Dictionary<UniqueId, MailDto> unreadMessages = new Dictionary<UniqueId, MailDto>();
-        private Dictionary<UniqueId, MailDto> notificatedMessages = new Dictionary<UniqueId, MailDto>();
+    public void SetLanguage(string language)
+    {
+        LocalizationHelper.SetLanguage(new CultureInfo(language));
+    }
 
-        private MailService mailService;
-        private SettingsManager<MailAgentSettings> settingManager;
-        private Logger logger;
+    public void Shutdown()
+    {
+    }
 
-        public ModuleController()
+    private void OnTimedEvent(object? source, ElapsedEventArgs e)
+    {
+        try
         {
-            this.mailService = new MailService();
-            this.settingManager = new SettingsManager<MailAgentSettings>();
-            this.logger = new Logger();
-        }
-
-        public List<CommandInterface> getCommandList()
-        {
-            return new List<CommandInterface>();
-        }
-
-        public void init()
-        {
-            var settings = settingManager.LoadSettings();
-
-            _timer = new System.Timers.Timer(settings.checkInterval * 1000);
-            _timer.Elapsed += OnTimedEvent;
-            _timer.AutoReset = true;
-            _timer.Enabled = true;
-        }
-
-        public void setLanguage(string language)
-        {
-            LocalizationHelper.Language = new CultureInfo(language);
-        }
-
-        public void shutdown()
-        {
-        }
-
-        private void OnTimedEvent(Object source, ElapsedEventArgs e)
-        {
-            try
+            var settings = _settingManager.LoadSettings();
+            var tempUnreadMessages = new Dictionary<UniqueId, MailDto>();
+            foreach (var accountSettings in settings.GetAccountSettings())
             {
-                var settings = settingManager.LoadSettings();
-                var tempUnreadMessages = new Dictionary<UniqueId, MailDto>();
-                foreach (var accountSettings in settings.GetAccountSettings())
+                try
                 {
-                    try
+                    // Здесь заполняется tempUnreadMessages
+                    var unreadAccountMessages = _mailService.CheckMail(accountSettings, settings.TimeToReconnect);
+                    if (unreadAccountMessages == null) continue;
+                    foreach (var unreadMessage in unreadAccountMessages)
                     {
-                        // Здесь заполняется tempUnreadMessages
-                        var unreadAccountMessages = mailService.checkMail(accountSettings, settings.timeToReconnect);
-                        if (unreadAccountMessages != null)
-                        {
-                            foreach (var unreadMessage in unreadAccountMessages)
-                            {
-                                tempUnreadMessages.Add(unreadMessage.Key, unreadMessage.Value);
-                            }
-                        }
-                    }
-                    catch (Exception ex) {
-                        logger.Error(ex.Message);
-                        Debug.WriteLine(ex.Message);
+                        tempUnreadMessages.Add(unreadMessage.Key, unreadMessage.Value);
                     }
                 }
-
-                // Здесь переносим сообщения в unreadMessages (для обеспечения атомарности операции)
-                this.unreadMessages = tempUnreadMessages;
-
-
-            }
-            catch (Exception ex) {
-                this.logger.Error(ex.ToString());
-            }
-        }
-
-        public BitmapImage? getTaskbarIcon()
-        {
-            if (this.unreadMessages.Count == 0)
-            {
-                return null;
-            }
-            return new BitmapImage(new Uri("pack://application:,,,/MailAgent;component/Resources/mail.ico"));
-        }
-
-        private int counter = 0;
-
-        public string? getTaskbarIconText()
-        {
-            if (this.unreadMessages.Count == 0)
-            {
-                return null;
-            }
-            return "непрочитанных - " + this.unreadMessages.Count;
-        }
-
-        public Notification? popNotification()
-        {
-            Dictionary<UniqueId, MailDto> newUnreadMessages = new Dictionary<UniqueId, MailDto>();
-            foreach (var unreadMessage in this.unreadMessages)
-            {
-                if (!this.notificatedMessages.ContainsKey(unreadMessage.Key))
-                {
-                    newUnreadMessages[unreadMessage.Key] = unreadMessage.Value;
+                catch (Exception ex) {
+                    _logger?.Error(ex.Message);
                 }
             }
 
-            Notification? notification = null;
-
-            if (newUnreadMessages.Count == 1)
-            {
-                var last = newUnreadMessages.Last().Value;
-                notification = new Notification(last.to + ": <" + last.from + ">", last.subject, last.mailRef);
-            }
-            if (newUnreadMessages.Count > 1)
-            {
-                var last = newUnreadMessages.Last().Value;
-                notification = new Notification(last.to + ":", "У вас " + newUnreadMessages.Count + " " + getMessageEnding(newUnreadMessages.Count), last.mailRef);
-            }
-
-            this.notificatedMessages = new Dictionary<UniqueId, MailDto>();
-            foreach (var unreadMessage in this.unreadMessages)
-            {
-                this.notificatedMessages[unreadMessage.Key] = unreadMessage.Value;
-            }
-
-            return notification;
+            // Здесь переносим сообщения в unreadMessages (для обеспечения атомарности операции)
+            _unreadMessages = tempUnreadMessages;
         }
+        catch (Exception ex) {
+            _logger?.Error(ex.ToString());
+        }
+    }
 
-        string getMessageEnding(int count)
+    public BitmapImage? GetTaskbarIcon()
+    {
+        if (_unreadMessages.Count == 0)
         {
-            if (count % 10 == 1 && count % 100 != 11)
-                return "новое сообщение";
-            else if ((count % 10 >= 2 && count % 10 <= 4) && (count % 100 < 12 || count % 100 > 14))
-                return "новых сообщения";
-            else
-                return "новых сообщений";
+            return null;
         }
+        return new BitmapImage(new Uri("pack://application:,,,/MailAgent;component/Resources/mail.ico"));
+    }
 
-        public void openSettings()
+    public string? GetTaskbarIconText()
+    {
+        if (_unreadMessages.Count == 0)
         {
-            var settings = settingManager.LoadSettings();
-            SettingsForm form = new SettingsForm(settings);
-            if (form.ShowDialog() == true){
-            var settingManager = new SettingsManager<MailAgentSettings>();
-                settingManager.SaveSettings(settings);
+            return null;
+        }
+        return "непрочитанных - " + _unreadMessages.Count;
+    }
+
+    public Notification? PopNotification()
+    {
+        var newUnreadMessages = new Dictionary<UniqueId, MailDto>();
+        foreach (var unreadMessage in _unreadMessages)
+        {
+            if (!_notifiedMessages.ContainsKey(unreadMessage.Key))
+            {
+                newUnreadMessages[unreadMessage.Key] = unreadMessage.Value;
             }
         }
+
+        Notification? notification = null;
+
+        if (newUnreadMessages.Count == 1)
+        {
+            var last = newUnreadMessages.Last().Value;
+            notification = new Notification(last.To + ": <" + last.From + ">", last.Subject, last.MailRef);
+        }
+        else if (newUnreadMessages.Count > 1)
+        {
+            var last = newUnreadMessages.Last().Value;
+            notification = new Notification(last.To + ":",
+                GetNotificationMessage(newUnreadMessages.Count), last.MailRef);
+        }
+
+        foreach (var unreadMessage in _unreadMessages)
+        {
+            _notifiedMessages[unreadMessage.Key] = unreadMessage.Value;
+        }
+
+        return notification;
+    }
+
+    private static string GetNotificationMessage(int count)
+    {
+        var (lastDigit, lastTwoDigits) = (count % 10, count % 100);
+    
+        string messageEnding = (lastDigit == 1 && lastTwoDigits != 11) 
+            ? LocalizationHelper.GetString("NewMessageNominativeCase")
+            : (lastDigit is >= 2 and <= 4 && lastTwoDigits is < 12 or > 14)
+                ? LocalizationHelper.GetString("NewMessageGenitiveSingular")
+                : LocalizationHelper.GetString("NewMessageGenitivePlural");
+    
+        return $"{LocalizationHelper.GetString("YouHave")} {count} {messageEnding}";
+    }
+
+    public void OpenSettings()
+    {
+        var settings = _settingManager.LoadSettings();
+        var form = new SettingsForm(settings);
+        if (form.ShowDialog() != true) return;
+        var settingManager = new SettingsManager<MailAgentSettings>();
+        settingManager.SaveSettings(settings);
+    }
+
+    public void Init(ILogger logger)
+    {
+        _logger = logger;
+        var settings = _settingManager.LoadSettings();
+
+        _timer = new Timer(settings.CheckInterval * 1000);
+        _timer.Elapsed += OnTimedEvent;
+        _timer.AutoReset = true;
+        _timer.Enabled = true;
     }
 }

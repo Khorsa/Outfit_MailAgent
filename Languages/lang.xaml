@@ -25,4 +25,9 @@
     <v:String x:Key="SelectAccountForEdit">Select account for edit.</v:String>
     <v:String x:Key="SelectAccountForDelete">Select account for delete.</v:String>
 
+    <v:String x:Key="YouHave">You have</v:String>
+    <v:String x:Key="NewMessageNominativeCase">new message</v:String>
+    <v:String x:Key="NewMessageGenitiveSingular">new messages</v:String>
+    <v:String x:Key="NewMessageGenitivePlural">new messages</v:String>
+
 </ResourceDictionary>

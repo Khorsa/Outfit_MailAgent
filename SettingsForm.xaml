@@ -38,10 +38,10 @@
             <ListView x:Name="AccountsListView" Margin="0,10" Height="150">
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="{DynamicResource Server}" Width="130" DisplayMemberBinding="{Binding server}"/>
-                        <GridViewColumn Header="{DynamicResource Port}" Width="40" DisplayMemberBinding="{Binding port}"/>
-                        <GridViewColumn Header="{DynamicResource EMail}" Width="150" DisplayMemberBinding="{Binding email}"/>
-                        <GridViewColumn Header="{DynamicResource LinkToService}" DisplayMemberBinding="{Binding mailServiceRef}"/>
+                        <GridViewColumn Header="{DynamicResource Server}" Width="130" DisplayMemberBinding="{Binding Server}"/>
+                        <GridViewColumn Header="{DynamicResource Port}" Width="40" DisplayMemberBinding="{Binding Port}"/>
+                        <GridViewColumn Header="{DynamicResource EMail}" Width="150" DisplayMemberBinding="{Binding Email}"/>
+                        <GridViewColumn Header="{DynamicResource LinkToService}" DisplayMemberBinding="{Binding MailServiceRef}"/>
                     </GridView>
                 </ListView.View>
             </ListView>

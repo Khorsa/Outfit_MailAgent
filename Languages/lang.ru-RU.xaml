@@ -25,4 +25,9 @@
     <v:String x:Key="SelectAccountForEdit">Выберите учётную запись для редактирования.</v:String>
     <v:String x:Key="SelectAccountForDelete">Выберите учётную запись для удаления.</v:String>
 
+    <v:String x:Key="YouHave">У вас</v:String>
+    <v:String x:Key="NewMessageNominativeCase">новое сообщение</v:String>
+    <v:String x:Key="NewMessageGenitiveSingular">новых сообщения</v:String>
+    <v:String x:Key="NewMessageGenitivePlural">новых сообщений</v:String>
+    
 </ResourceDictionary>

@@ -15,107 +15,106 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace MailAgent
+namespace MailAgent;
+
+/// <summary>
+/// Логика взаимодействия для Settings.xaml
+/// </summary>
+public partial class SettingsForm : Window
 {
-    /// <summary>
-    /// Логика взаимодействия для Settings.xaml
-    /// </summary>
-    public partial class SettingsForm : Window
+    public ObservableCollection<AccountSettings> Accounts { get; set; }
+    public readonly MailAgentSettings Settings;
+
+    public SettingsForm(MailAgentSettings settings)
     {
-        public ObservableCollection<AccountSettings> Accounts { get; set; }
-        public readonly MailAgentSettings settings;
+        this.Settings = settings;
+        InitializeComponent();
+        Accounts = new ObservableCollection<AccountSettings>();
 
-        public SettingsForm(MailAgentSettings settings)
+        LocalizationHelper.LanguageChanged += LanguageChanged;
+        LanguageChanged(this, EventArgs.Empty);
+
+        foreach (var account in this.Settings.GetAccountSettings())
         {
-            this.settings = settings;
-            InitializeComponent();
-            Accounts = new ObservableCollection<AccountSettings>();
-
-            LocalizationHelper.LanguageChanged += LanguageChanged;
-            LanguageChanged(this, EventArgs.Empty);
-
-            foreach (var account in this.settings.GetAccountSettings())
-            {
-                Accounts.Add(account);
-            }
-            AccountsListView.ItemsSource = Accounts;
-            MailCheckIntervalSlider.Value = settings.checkInterval;
-            ReconnectIntervalSlider.Value = settings.timeToReconnect;
+            Accounts.Add(account);
         }
+        AccountsListView.ItemsSource = Accounts;
+        MailCheckIntervalSlider.Value = settings.CheckInterval;
+        ReconnectIntervalSlider.Value = settings.TimeToReconnect;
+    }
 
-        private void AddAccount_Click(object sender, RoutedEventArgs e)
+    private void AddAccount_Click(object sender, RoutedEventArgs e)
+    {
+        var accountWindow = new AccountWindow();
+        if (accountWindow.ShowDialog() == true)
         {
-            var accountWindow = new AccountWindow();
+            Accounts.Add(accountWindow.Account);
+        }
+    }
+
+    private void EditAccount_Click(object sender, RoutedEventArgs e)
+    {
+        if (AccountsListView.SelectedItem is AccountSettings selectedAccount)
+        {
+            var accountWindow = new AccountWindow(selectedAccount);
             if (accountWindow.ShowDialog() == true)
             {
-                Accounts.Add(accountWindow.Account);
+                var index = Accounts.IndexOf(selectedAccount);
+                Accounts[index] = accountWindow.Account;
             }
         }
-
-        private void EditAccount_Click(object sender, RoutedEventArgs e)
+        else
         {
-            if (AccountsListView.SelectedItem is AccountSettings selectedAccount)
-            {
-                var accountWindow = new AccountWindow(selectedAccount);
-                if (accountWindow.ShowDialog() == true)
-                {
-                    var index = Accounts.IndexOf(selectedAccount);
-                    Accounts[index] = accountWindow.Account;
-                }
-            }
-            else
-            {
-                MessageBox.Show(LocalizationHelper.GetString("SelectAccountForEdit"));
-            }
+            MessageBox.Show(LocalizationHelper.GetString("SelectAccountForEdit"));
         }
+    }
 
-        private void DeleteAccount_Click(object sender, RoutedEventArgs e)
+    private void DeleteAccount_Click(object sender, RoutedEventArgs e)
+    {
+        if (AccountsListView.SelectedItem is AccountSettings selectedAccount)
         {
-            if (AccountsListView.SelectedItem is AccountSettings selectedAccount)
-            {
-                Accounts.Remove(selectedAccount);
-            }
-            else
-            {
-                MessageBox.Show(LocalizationHelper.GetString("SelectAccountForDelete"));
-            }
+            Accounts.Remove(selectedAccount);
         }
-
-        private void Apply_Click(object sender, RoutedEventArgs e)
+        else
         {
-            // Логика применения настроек
-            this.settings.checkInterval = int.Parse(MailCheckIntervalValue.Text);
-            this.settings.timeToReconnect= int.Parse(ReconnectIntervalValue.Text);
-
-            this.settings.accounts = new List<Dictionary<string, string>>();
-            foreach (AccountSettings accountItem in AccountsListView.Items) {
-                this.settings.accounts.Add(accountItem.toArray());
-            }
-            this.DialogResult = true;
-            this.Close();
+            MessageBox.Show(LocalizationHelper.GetString("SelectAccountForDelete"));
         }
+    }
 
-        private void Cancel_Click(object sender, RoutedEventArgs e)
-        {
-            this.DialogResult = false;
-            this.Close();
+    private void Apply_Click(object sender, RoutedEventArgs e)
+    {
+        // Логика применения настроек
+        this.Settings.CheckInterval = int.Parse(MailCheckIntervalValue.Text);
+        this.Settings.TimeToReconnect= int.Parse(ReconnectIntervalValue.Text);
+
+        this.Settings.Accounts = new List<Dictionary<string, string>>();
+        foreach (AccountSettings accountItem in AccountsListView.Items) {
+            this.Settings.Accounts.Add(accountItem.ToArray());
         }
+        this.DialogResult = true;
+        this.Close();
+    }
 
-        private void LanguageChanged(Object? sender, EventArgs e)
+    private void Cancel_Click(object sender, RoutedEventArgs e)
+    {
+        this.DialogResult = false;
+        this.Close();
+    }
+
+    private void LanguageChanged(Object? sender, EventArgs e)
+    {
+        ResourceDictionary oldDict = (from d in this.Resources.MergedDictionaries
+            where d.Source != null && d.Source.OriginalString.Contains("Languages/lang.")
+            select d).First();
+        if (oldDict != null)
         {
-            ResourceDictionary oldDict = (from d in this.Resources.MergedDictionaries
-                                          where d.Source != null && d.Source.OriginalString.Contains("Languages/lang.")
-                                          select d).First();
-            if (oldDict != null)
-            {
-                int ind = this.Resources.MergedDictionaries.IndexOf(oldDict);
-                this.Resources.MergedDictionaries.Remove(oldDict);
-                this.Resources.MergedDictionaries.Insert(ind, LocalizationHelper.CurrentDictionary);
-            }
-            else
-            {
-                this.Resources.MergedDictionaries.Add(LocalizationHelper.CurrentDictionary);
-            }
+            int ind = this.Resources.MergedDictionaries.IndexOf(oldDict);
+            this.Resources.MergedDictionaries.Remove(oldDict);
+            this.Resources.MergedDictionaries.Insert(ind, LocalizationHelper.CurrentDictionary);
+        }
+        else
+        {
+            this.Resources.MergedDictionaries.Add(LocalizationHelper.CurrentDictionary);
         }
     }
 }
