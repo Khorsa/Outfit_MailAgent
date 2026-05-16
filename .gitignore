@@ -2,3 +2,4 @@ obj/
 bin/
 deploy/
 copy.bat
+afterbuild.bat
