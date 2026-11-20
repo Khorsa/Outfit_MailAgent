@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2026 Roman Stolyarov <rshome@mail.ru>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,6 +19,7 @@ namespace MailAgent;
 
 internal class MailDto(
     UniqueId id,
+    string account,
     string folderId,
     string subject,
     InternetAddressList from,
@@ -28,10 +29,17 @@ internal class MailDto(
 )
 {
     public UniqueId Id = id;
+    public string Account = account;
     public string FolderId = folderId;
     public string Subject = subject;
     public InternetAddressList From = from;
     public InternetAddressList To = to;
     public DateTimeOffset Date = date;
     public string MailRef = mailRef;
+
+    /// <summary>
+    /// Глобальный ключ письма: UniqueId уникален только внутри папки,
+    /// поэтому учитываем ещё аккаунт и папку.
+    /// </summary>
+    public string Key => $"{Account}|{FolderId}|{Id}";
 }

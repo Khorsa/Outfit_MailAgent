@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2026 Roman Stolyarov <rshome@mail.ru>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -91,14 +91,26 @@ public partial class SettingsForm : Window
 
     private void Apply_Click(object sender, RoutedEventArgs e)
     {
-        // Логика применения настроек
-        this.Settings.CheckInterval = int.Parse(MailCheckIntervalValue.Text);
-        this.Settings.TimeToReconnect= int.Parse(ReconnectIntervalValue.Text);
+        if (!int.TryParse(MailCheckIntervalValue.Text, out var checkInterval) || checkInterval < 1
+            || !int.TryParse(ReconnectIntervalValue.Text, out var reconnectInterval) || reconnectInterval < 1)
+        {
+            MessageBox.Show(
+                "Укажите интервал больше нуля.",
+                "Настройки",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        this.Settings.CheckInterval = checkInterval;
+        this.Settings.TimeToReconnect = reconnectInterval;
 
         this.Settings.Accounts = new List<Dictionary<string, string>>();
-        foreach (AccountSettings accountItem in AccountsListView.Items) {
+        foreach (AccountSettings accountItem in AccountsListView.Items)
+        {
             this.Settings.Accounts.Add(accountItem.ToArray());
         }
+
         this.DialogResult = true;
         this.Close();
     }

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2026 Roman Stolyarov <rshome@mail.ru>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,17 +16,25 @@ namespace MailAgent.Settings;
 
 public class MailAgentSettings
 {
-    public List<Dictionary<string, string>> Accounts = new List<Dictionary<string, string>>();
+    public List<Dictionary<string, string>> Accounts { get; set; } = new();
     public int TimeToReconnect = 3600;
     public int CheckInterval = 5;
 
     public List<AccountSettings> GetAccountSettings()
     {
-        List < AccountSettings > settings = new List<AccountSettings >();
-        foreach (var s in this.Accounts)
+        List<AccountSettings> settings = new List<AccountSettings>();
+        foreach (var s in this.Accounts ?? [])
         {
-            settings.Add(AccountSettings.FromArray(s));
+            try
+            {
+                settings.Add(AccountSettings.FromArray(s));
+            }
+            catch
+            {
+                // Пропускаем повреждённую запись, остальные аккаунты продолжают работать.
+            }
         }
+
         return settings;
     }
 }

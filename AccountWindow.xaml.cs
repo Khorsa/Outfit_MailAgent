@@ -1,4 +1,4 @@
-﻿using MailAgent.Settings;
+using MailAgent.Settings;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -45,7 +45,7 @@ public partial class AccountWindow : Window
     private void Save_Click(object sender, RoutedEventArgs e)
     {
         Account.Server = ServerTextBox.Text;
-        Account.Port = int.Parse(PortTextBox.Text);
+        Account.Port = int.TryParse(PortTextBox.Text, out var port) ? port : 993;
         Account.Email = EmailTextBox.Text;
         Account.MailServiceRef = ServiceLinkTextBox.Text;
         Account.SetPassword(PasswordBox.Password);

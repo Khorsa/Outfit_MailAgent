@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2026 Roman Stolyarov <rshome@mail.ru>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -32,7 +32,17 @@ public class AccountSettings
 
     public string GetPassword()
     {
-        return Crypter.Unprotect(EncryptedPassword);
+        if (string.IsNullOrWhiteSpace(EncryptedPassword)) return "";
+
+        try
+        {
+            return Crypter.Unprotect(EncryptedPassword);
+        }
+        catch
+        {
+            // Повреждённый/старый пароль: не роняем настройки, пользователь введёт заново.
+            return "";
+        }
     }
 
     public void SetPassword(string password)
@@ -56,13 +66,18 @@ public class AccountSettings
     {
         var accountSettings = new AccountSettings();
 
-        accountSettings.Port = int.Parse(arr["Port"]);
-        accountSettings.Server = arr["Server"];
-        accountSettings.Email = arr["Email"];
-        accountSettings.EncryptedPassword = arr["Password"];
-        accountSettings.MailServiceRef = arr["Mailref"];
+        accountSettings.Port = int.TryParse(GetValue(arr, "port"), out var port) ? port : 993;
+        accountSettings.Server = GetValue(arr, "server");
+        accountSettings.Email = GetValue(arr, "email");
+        accountSettings.EncryptedPassword = GetValue(arr, "password");
+        accountSettings.MailServiceRef = GetValue(arr, "mailref");
 
         return accountSettings;
+    }
+
+    private static string GetValue(Dictionary<string, string> values, string key)
+    {
+        return values.TryGetValue(key, out var value) ? value ?? "" : "";
     }
 
 

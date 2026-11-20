@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2026 Roman Stolyarov <rshome@mail.ru>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -20,10 +20,12 @@ namespace MailAgent;
 
 internal class ModuleController : IModuleController
 {
-    private static Timer? _timer;
+    private Timer? _timer;
 
-    private Dictionary<UniqueId, MailDto> _unreadMessages = new();
-    private readonly Dictionary<UniqueId, MailDto> _notifiedMessages = new();
+    private List<MailDto> _unreadMessages = new();
+    private readonly Dictionary<string, MailDto> _notifiedMessages = new();
+
+    private static BitmapImage? _mailIcon;
 
     private readonly MailService _mailService = new();
     private readonly SettingsManager<MailAgentSettings> _settingManager = new();
@@ -41,25 +43,30 @@ internal class ModuleController : IModuleController
 
     public void Shutdown()
     {
+        if (_timer != null)
+        {
+            _timer.Stop();
+            _timer.Elapsed -= OnTimedEvent;
+            _timer.Dispose();
+            _timer = null;
+        }
+
+        _mailService.Dispose();
     }
 
     private void OnTimedEvent(object? source, ElapsedEventArgs e)
     {
         try
         {
-            var settings = _settingManager.LoadSettings();
-            var tempUnreadMessages = new Dictionary<UniqueId, MailDto>();
+            var settings = _settingManager.LoadSettings(force: true);
+            var tempUnreadMessages = new List<MailDto>();
             foreach (var accountSettings in settings.GetAccountSettings())
             {
                 try
                 {
-                    // Здесь заполняется tempUnreadMessages
                     var unreadAccountMessages = _mailService.CheckMail(accountSettings, settings.TimeToReconnect);
                     if (unreadAccountMessages == null) continue;
-                    foreach (var unreadMessage in unreadAccountMessages)
-                    {
-                        tempUnreadMessages.Add(unreadMessage.Key, unreadMessage.Value);
-                    }
+                    tempUnreadMessages.AddRange(unreadAccountMessages);
                 }
                 catch (Exception ex) {
                     _logger?.Error(ex.Message);
@@ -80,7 +87,8 @@ internal class ModuleController : IModuleController
         {
             return null;
         }
-        return new BitmapImage(new Uri("pack://application:,,,/MailAgent;component/Resources/mail.ico"));
+
+        return _mailIcon ??= new BitmapImage(new Uri("pack://application:,,,/MailAgent;component/Resources/mail.ico"));
     }
 
     public string? GetTaskbarIconText()
@@ -94,12 +102,12 @@ internal class ModuleController : IModuleController
 
     public Notification? PopNotification()
     {
-        var newUnreadMessages = new Dictionary<UniqueId, MailDto>();
+        var newUnreadMessages = new List<MailDto>();
         foreach (var unreadMessage in _unreadMessages)
         {
             if (!_notifiedMessages.ContainsKey(unreadMessage.Key))
             {
-                newUnreadMessages[unreadMessage.Key] = unreadMessage.Value;
+                newUnreadMessages.Add(unreadMessage);
             }
         }
 
@@ -107,19 +115,26 @@ internal class ModuleController : IModuleController
 
         if (newUnreadMessages.Count == 1)
         {
-            var last = newUnreadMessages.Last().Value;
+            var last = newUnreadMessages[^1];
             notification = new Notification(last.To + ": <" + last.From + ">", last.Subject, last.MailRef);
         }
         else if (newUnreadMessages.Count > 1)
         {
-            var last = newUnreadMessages.Last().Value;
+            var last = newUnreadMessages[^1];
             notification = new Notification(last.To + ":",
                 GetNotificationMessage(newUnreadMessages.Count), last.MailRef);
         }
 
+        // Запоминаем только актуальные письма, чтобы словарь не рос бесконечно.
+        var currentKeys = new HashSet<string>(_unreadMessages.Select(message => message.Key));
+        foreach (var staleKey in _notifiedMessages.Keys.Where(key => !currentKeys.Contains(key)).ToList())
+        {
+            _notifiedMessages.Remove(staleKey);
+        }
+
         foreach (var unreadMessage in _unreadMessages)
         {
-            _notifiedMessages[unreadMessage.Key] = unreadMessage.Value;
+            _notifiedMessages[unreadMessage.Key] = unreadMessage;
         }
 
         return notification;
@@ -140,19 +155,22 @@ internal class ModuleController : IModuleController
 
     public void OpenSettings()
     {
-        var settings = _settingManager.LoadSettings();
+        var settings = _settingManager.LoadSettings(true);
         var form = new SettingsForm(settings);
         if (form.ShowDialog() != true) return;
-        var settingManager = new SettingsManager<MailAgentSettings>();
-        settingManager.SaveSettings(settings);
+        _settingManager.SaveSettings(settings);
     }
 
     public void Init(ILogger logger)
     {
         _logger = logger;
-        var settings = _settingManager.LoadSettings();
+        _mailService.Logger = logger;
+        var settings = _settingManager.LoadSettings(force: true);
 
-        _timer = new Timer(settings.CheckInterval * 1000);
+        _timer?.Stop();
+        _timer?.Dispose();
+
+        _timer = new Timer(Math.Max(1, settings.CheckInterval) * 1000);
         _timer.Elapsed += OnTimedEvent;
         _timer.AutoReset = true;
         _timer.Enabled = true;
